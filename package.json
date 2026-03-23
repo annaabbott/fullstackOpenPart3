@@ -1,0 +1,26 @@
+{
+  "name": "fullstackopenpart3",
+  "version": "1.0.0",
+  "description": "backend to phonebook app",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/annaabbott/fullstackOpenPart3.git"
+  },
+  "author": "Anna Abbott",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/annaabbott/fullstackOpenPart3/issues"
+  },
+  "homepage": "https://github.com/annaabbott/fullstackOpenPart3#readme",
+  "dependencies": {
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
+    "morgan": "^1.10.1"
+  }
+}
