@@ -6,6 +6,13 @@ const morgan = require("morgan");
 const cors = require("cors");
 
 app.use(cors());
+app.use((req, res, next) => {
+  res.setHeader(
+    "Content-Security-Policy",
+    "default-src 'self' 'unsafe-inline' 'unsafe-eval'; connect-src 'self' https: http:;",
+  );
+  next();
+});
 app.use(express.json());
 app.use(morgan("dev"));
 
@@ -15,6 +22,8 @@ morgan.token("body", (request, response) => {
 app.use(
   morgan(":method :url :status :res[content-length] - :response-time ms :body"),
 );
+
+app.use(express.static("dist"));
 
 let persons = [
   {
@@ -93,13 +102,13 @@ app.post("/api/persons", (request, response) => {
     });
   }
 
-  const note = {
-    content: body.content,
-    important: body.important || false,
+  const person = {
+    name: body.name,
+    number: body.number,
     id: generateId(),
   };
-  persons = persons.concat(note);
-  response.json(note);
+  persons = persons.concat(person);
+  response.json(person);
 });
 
 // const unknownEndpoint = (request, response) => {
