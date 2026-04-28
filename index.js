@@ -1,9 +1,20 @@
-const e = require("express");
-const express = require("express");
+import dotenv from "dotenv";
+import express from "express";
+import morgan from "morgan";
+import cors from "cors";
+import Person from "./models/person.js";
+
+dotenv.config();
+
 const app = express();
 let nextId = 1000;
-const morgan = require("morgan");
-const cors = require("cors");
+// const password = process.argv[2];
+// const url =
+//   "mongodb+srv://annaabbottdesign_db_user:<db_password>@cluster0.3itr5l5.mongodb.net/?appName=Cluster0".replace(
+//     "<db_password>",
+//     password,
+//   );
+const url = process.env.MONGODB_URI;
 
 app.use(cors());
 app.use((req, res, next) => {
@@ -25,29 +36,6 @@ app.use(
 
 app.use(express.static("dist"));
 
-let persons = [
-  {
-    id: nextId++,
-    name: "Arto Hellas",
-    number: "040-123456",
-  },
-  {
-    id: nextId++,
-    name: "Ada Lovelace",
-    number: "39-44-5323523",
-  },
-  {
-    id: nextId++,
-    name: "Dan Abramov",
-    number: "12-43-234345",
-  },
-  {
-    id: nextId++,
-    name: "Mary Poppendieck",
-    number: "39-23-6423122",
-  },
-];
-
 app.get("/info", (request, response) => {
   response.send(
     "<p>Phonebook has info for " +
@@ -58,40 +46,43 @@ app.get("/info", (request, response) => {
   );
 });
 
-app.get("/api/persons", (request, response) => {
-  response.json(persons);
+app.get("/api/persons", async (request, response) => {
+  const results = await Person.find({});
+  response.json(results);
 });
 
-app.get("/api/persons/:id", (request, response) => {
-  const id = parseInt(request.params.id);
-  const person = persons.find((person) => person.id === id);
-  if (person) {
-    response.json(person);
-  } else {
-    response.status(404).end();
+app.get("/api/persons/:id", async (request, response) => {
+  try {
+    const person = await Person.findById(request.params.id);
+    if (person) {
+      response.json(person);
+    } else {
+      response.status(404).end();
+    }
+  } catch (error) {
+    response.status(400).json({ error: error.message });
   }
 });
 
-app.delete("/api/persons/:id", (request, response) => {
-  const id = parseInt(request.params.id);
-  persons = persons.filter((person) => person.id !== id);
-  response.status(204).end();
+app.delete("/api/persons/:id", async (request, response) => {
+  try {
+    await Person.findByIdAndDelete(request.params.id);
+    response.status(204).end();
+  } catch (error) {
+    response.status(400).json({ error: error.message });
+  }
 });
 
-const generateId = () => {
-  return nextId++;
-};
-
-app.post("/api/persons", (request, response) => {
+app.post("/api/persons", async (request, response) => {
   const body = request.body;
   if (!body.name) {
     return response.status(400).json({
-      error: "property name is missing",
+      error: "Name is missing",
     });
   }
   if (!body.number) {
     return response.status(400).json({
-      error: "property number is missing",
+      error: "Number is missing",
     });
   }
 
@@ -102,21 +93,20 @@ app.post("/api/persons", (request, response) => {
     });
   }
 
-  const person = {
+  const person = new Person({
     name: body.name,
     number: body.number,
-    id: generateId(),
-  };
-  persons = persons.concat(person);
-  response.json(person);
+  });
+
+  try {
+    const savedPerson = await person.save();
+    response.json(savedPerson);
+  } catch (error) {
+    response.status(400).json({ error: error.message });
+  }
 });
 
-// const unknownEndpoint = (request, response) => {
-//   response.status(404).send({ error: "unknown endpoint" });
-// };
-// app.use(unknownEndpoint);
-
-const PORT = 3001;
+const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
