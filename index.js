@@ -8,12 +8,6 @@ dotenv.config();
 
 const app = express();
 let nextId = 1000;
-// const password = process.argv[2];
-// const url =
-//   "mongodb+srv://annaabbottdesign_db_user:<db_password>@cluster0.3itr5l5.mongodb.net/?appName=Cluster0".replace(
-//     "<db_password>",
-//     password,
-//   );
 const url = process.env.MONGODB_URI;
 
 app.use(cors());
@@ -51,7 +45,7 @@ app.get("/api/persons", async (request, response) => {
   response.json(results);
 });
 
-app.get("/api/persons/:id", async (request, response) => {
+app.get("/api/persons/:id", async (request, response, next) => {
   try {
     const person = await Person.findById(request.params.id);
     if (person) {
@@ -60,20 +54,22 @@ app.get("/api/persons/:id", async (request, response) => {
       response.status(404).end();
     }
   } catch (error) {
-    response.status(400).json({ error: error.message });
+    console.log(error);
+    next(error);
   }
 });
 
-app.delete("/api/persons/:id", async (request, response) => {
+app.delete("/api/persons/:id", async (request, response, next) => {
   try {
     await Person.findByIdAndDelete(request.params.id);
     response.status(204).end();
   } catch (error) {
-    response.status(400).json({ error: error.message });
+    console.log(error);
+    next(error);
   }
 });
 
-app.post("/api/persons", async (request, response) => {
+app.post("/api/persons", async (request, response, next) => {
   const body = request.body;
   if (!body.name) {
     return response.status(400).json({
@@ -104,6 +100,33 @@ app.post("/api/persons", async (request, response) => {
   } catch (error) {
     response.status(400).json({ error: error.message });
   }
+});
+
+app.put("/api/persons/:id", async (request, response, next) => {
+  const body = request.body;
+
+  Person.findByIdAndUpdate(
+    request.params.id,
+    { number: body.number },
+    { new: true },
+  )
+    .then((updatedPerson) => {
+      response.json(updatedPerson);
+    })
+    .catch((error) => {
+      next(error);
+    });
+});
+
+// Error handling middleware
+app.use((error, request, response, next) => {
+  console.error(error.message);
+
+  if (error.name === "CastError") {
+    return response.status(400).send({ error: "malformatted id" });
+  }
+
+  next(error);
 });
 
 const PORT = process.env.PORT || 3001;
