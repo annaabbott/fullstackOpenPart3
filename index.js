@@ -30,14 +30,20 @@ app.use(
 
 app.use(express.static("dist"));
 
-app.get("/info", (request, response) => {
-  response.send(
-    "<p>Phonebook has info for " +
-      persons.length +
-      " people</p> <p>" +
-      new Date() +
-      "</p>",
-  );
+app.get("/info", async (request, response, next) => {
+  try {
+    const persons = await Person.find({});
+    response.send(
+      "<p>Phonebook has info for " +
+        persons.length +
+        " people</p> <p>" +
+        new Date() +
+        "</p>",
+    );
+  } catch (error) {
+    console.log(error);
+    next(error);
+  }
 });
 
 app.get("/api/persons", async (request, response) => {
@@ -71,51 +77,41 @@ app.delete("/api/persons/:id", async (request, response, next) => {
 
 app.post("/api/persons", async (request, response, next) => {
   const body = request.body;
-  if (!body.name) {
-    return response.status(400).json({
-      error: "Name is missing",
-    });
-  }
-  if (!body.number) {
-    return response.status(400).json({
-      error: "Number is missing",
-    });
-  }
-
-  const match = persons.find((person) => person.name === body.name);
-  if (match) {
-    return response.status(400).json({
-      error: "name must be unique",
-    });
-  }
-
-  const person = new Person({
-    name: body.name,
-    number: body.number,
-  });
 
   try {
+    const existingPerson = await Person.findOne({ name: body.name });
+    if (existingPerson) {
+      return response.status(400).json({
+        error: "name must be unique",
+      });
+    }
+
+    const person = new Person({
+      name: body.name,
+      number: body.number,
+    });
+
     const savedPerson = await person.save();
     response.json(savedPerson);
   } catch (error) {
-    response.status(400).json({ error: error.message });
+    console.log(error);
+    next(error);
   }
 });
 
 app.put("/api/persons/:id", async (request, response, next) => {
   const body = request.body;
 
-  Person.findByIdAndUpdate(
-    request.params.id,
-    { number: body.number },
-    { new: true },
-  )
-    .then((updatedPerson) => {
-      response.json(updatedPerson);
-    })
-    .catch((error) => {
-      next(error);
-    });
+  try {
+    const updatedPerson = await Person.findByIdAndUpdate(
+      request.params.id,
+      { number: body.number },
+      { new: true, runValidators: true, context: "query" },
+    );
+    response.json(updatedPerson);
+  } catch (error) {
+    next(error);
+  }
 });
 
 // Error handling middleware
@@ -124,6 +120,8 @@ app.use((error, request, response, next) => {
 
   if (error.name === "CastError") {
     return response.status(400).send({ error: "malformatted id" });
+  } else if (error.name === "ValidationError") {
+    return response.status(400).json({ error: error.message });
   }
 
   next(error);
