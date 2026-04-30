@@ -9,7 +9,8 @@
     "dev": "node --watch index.js",
     "test": "echo \"Error: no test specified\" && exit 1",
     "build:ui": "rimraf dist && cd ../fullstackOpenPart2 && npm run build && shx cp -r dist ../fullstackOpenPart3",
-    "deploy:full": "npm run build:ui && git add . && git commit -m uibuild && git push"
+    "deploy:full": "npm run build:ui && git add . && git commit -m uibuild && git push",
+    "lint": "eslint ."
   },
   "repository": {
     "type": "git",
@@ -29,6 +30,10 @@
     "morgan": "^1.10.1"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@stylistic/eslint-plugin": "^5.10.0",
+    "eslint": "^10.2.1",
+    "globals": "^17.5.0",
     "rimraf": "^6.1.3",
     "shx": "^0.4.0"
   }
